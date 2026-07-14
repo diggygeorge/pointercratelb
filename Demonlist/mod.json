@@ -6,11 +6,11 @@
 		"mac": "2.2081",
 		"ios": "2.2081"
 	},
-	"id": "falzar.demonlist-leaderboards",
-	"name": "Demonlist Leaderboards",
+	"id": "falzar.helloworld",
+	"name": "helloworld",
 	"version": "v1.0.0",
 	"developer": "Falzar",
-	"description": "Presents hardest demons according to AREDL and top players according to Pointercrate.",
+	"description": "",
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3"
 	}
