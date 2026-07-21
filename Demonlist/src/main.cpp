@@ -1,17 +1,20 @@
-#include <Geode/modify/MenuLayer.hpp>
+#include <Geode/modify/LeaderboardsLayer.hpp>
 
 using namespace geode::prelude;
 
-class $modify(MenuLayer) {
-    bool init() {
-        if (!MenuLayer::init())
+class $modify(LeaderboardsLayer) {
+    bool init(LeaderboardType type, LeaderboardStat stat) {
+        if (!LeaderboardsLayer::init(type, stat))
             return false;
 
-        auto winSize = CCDirector::get()->getWinSize();
+        auto rightMenu = this->getChildByID("right-side-menu");
 
-        auto label = CCLabelBMFont::create("Hello, World!", "bigFont.fnt");
-        label->setPosition(winSize / 2);
-        this->addChild(label);
+        auto spr = ButtonSprite::create("Demonlist");
+        
+        auto btn = CCMenuItemSpriteExtra::create(spr, this, nullptr);
+
+        btn->setPosition(rightMenu->getPosition() - CCPoint { 492.5f, 160.f });
+        rightMenu->addChild(btn);
 
         return true;
     }
