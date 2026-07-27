@@ -28,30 +28,30 @@ class $modify(LeaderboardsLayer) {
     }
     void onCreators(CCObject* sender) {
         LeaderboardsLayer::onCreators(sender);
-        geode::log::info("Creator tab!");
+        // geode::log::info("Creator tab!");
+
         auto rightMenu = this->getChildByID("right-side-menu");
         if (rightMenu->getChildByID("demonlist-button")) {
-            // remove button
             rightMenu->removeChildByID("demonlist-button");
             return;
         }
     }
     void onGlobal(CCObject* sender) {
         LeaderboardsLayer::onGlobal(sender);
-        geode::log::info("Global tab!");
+        // geode::log::info("Global tab!");
+
         auto rightMenu = this->getChildByID("right-side-menu");
         if (rightMenu->getChildByID("demonlist-button")) {
-            // remove button
             rightMenu->removeChildByID("demonlist-button");
             return;
         }
     }
     void onWeek(CCObject* sender) {
         LeaderboardsLayer::onWeek(sender);
-        geode::log::info("Friends tab!");
+        // geode::log::info("Friends tab!");
+        
         auto rightMenu = this->getChildByID("right-side-menu");
         if (rightMenu->getChildByID("demonlist-button")) {
-            // remove button
             rightMenu->removeChildByID("demonlist-button");
             return;
         }
