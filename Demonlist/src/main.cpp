@@ -5,7 +5,11 @@ using namespace geode::prelude;
 
 
 
-class $modify(LeaderboardsLayer) {
+class $modify(DemonlistLayer, LeaderboardsLayer) {
+
+    void onButton(CCObject* sender) {
+        geode::log::info("Button clicked!");
+    }
 
     void onTop(CCObject* sender) {
         LeaderboardsLayer::onTop(sender);
@@ -20,7 +24,7 @@ class $modify(LeaderboardsLayer) {
 
         auto spr = CircleButtonSprite::create(topSprite);
 
-        auto btn = CCMenuItemSpriteExtra::create(spr, this, nullptr);
+        auto btn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(DemonlistLayer::onButton));
 
         btn->setPosition(rightMenu->getPosition() - CCPoint { 492.5f, 180.f });
         btn->setID("demonlist-button");
