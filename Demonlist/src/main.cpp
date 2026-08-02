@@ -1,14 +1,26 @@
+#include <Geode/Geode.hpp>
 #include <Geode/modify/LeaderboardsLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
+#include <Geode/utils/web.hpp>
+#include <Geode/utils/async.hpp>
 
 using namespace geode::prelude;
 
-
-
 class $modify(DemonlistLayer, LeaderboardsLayer) {
+
+    struct Fields {
+        TaskHolder<web::WebResponse> m_listener;
+    };
 
     void onButton(CCObject* sender) {
         geode::log::info("Button clicked!");
+        
+        auto req = web::WebRequest();
+        req.param("count", "200");
+        req.param("demon", "");
+        req.header("Content-Type", "application/json");
+
+        req.get("https://gdbrowser.com/api/leaderboard");
     }
 
     void onTop(CCObject* sender) {
