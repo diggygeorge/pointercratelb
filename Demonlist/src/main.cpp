@@ -4,6 +4,8 @@
 #include <Geode/utils/web.hpp>
 #include <Geode/utils/async.hpp>
 
+#include "lb.hpp"
+
 using namespace geode::prelude;
 
 class $modify(DemonlistLayer, LeaderboardsLayer) {
@@ -15,12 +17,14 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
     void onButton(CCObject* sender) {
         geode::log::info("Button clicked!");
         
-        auto req = web::WebRequest();
-        req.param("count", "200");
-        req.param("demon", "");
-        req.header("Content-Type", "application/json");
+        
 
-        req.get("https://gdbrowser.com/api/leaderboard");
+        m_fields->m_listener.spawn(
+            fetchLeaderboardData(),
+            [](web::WebResponse res) {
+                log::info("{}", res.string().unwrapOr("Uh oh!"));
+            }
+        );
     }
 
     void onTop(CCObject* sender) {
