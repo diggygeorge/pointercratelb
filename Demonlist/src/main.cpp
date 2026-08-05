@@ -3,6 +3,8 @@
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/utils/web.hpp>
 #include <Geode/utils/async.hpp>
+#include <matjson.hpp>
+#include <iostream>
 
 #include "lb.hpp"
 
@@ -17,12 +19,22 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
     void onButton(CCObject* sender) {
         geode::log::info("Button clicked!");
         
-        
-
         m_fields->m_listener.spawn(
             fetchLeaderboardData(),
             [](web::WebResponse res) {
-                log::info("{}", res.string().unwrapOr("Uh oh!"));
+                // convert to json using .json()
+                matjson::Value data = res.json().unwrapOr(matjson::makeObject({}));
+                int size = data.size();
+                if (data.isArray()) {
+                    for (int i = 0; i < size; i++) {
+                        geode::log::info("Player: {}, Rank: {}", data[i]["username"].asString().unwrapOr("Unknown"), data[i]["rank"].asInt().unwrapOr(0));
+                    }
+                }
+
+                // open a new menu
+                // for each entry, display a user box like the ones in the leaderboards section (click on a name, 
+                // display it bigger, figure out how to replicate the same menu that robtop does) 
+                // include a back button to exit out
             }
         );
     }
