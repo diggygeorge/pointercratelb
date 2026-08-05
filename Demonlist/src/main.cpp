@@ -21,20 +21,61 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         
         m_fields->m_listener.spawn(
             fetchLeaderboardData(),
-            [](web::WebResponse res) {
-                // convert to json using .json()
+            [this](web::WebResponse res) {
                 matjson::Value data = res.json().unwrapOr(matjson::makeObject({}));
-                int size = data.size();
+                auto entries = cocos2d::CCArray::create();
+
                 if (data.isArray()) {
-                    for (int i = 0; i < size; i++) {
-                        geode::log::info("Player: {}, Rank: {}", data[i]["username"].asString().unwrapOr("Unknown"), data[i]["rank"].asInt().unwrapOr(0));
+                    for (int i = 0; i < data.size(); i++) {
+                        auto item = data[i];
+                        auto score = GJUserScore::create();
+                            
+                        score->m_userName = item["username"].asString().unwrapOr("Unknown");
+                        score->m_userID = std::stoi(item["playerID"].asString().unwrapOr("0"));
+                        score->m_accountID = std::stoi(item["accountID"].asString().unwrapOr("0"));
+
+                        score->m_stars = item["stars"].asInt().unwrapOr(0);
+                        score->m_moons = item["moons"].asInt().unwrapOr(0);
+                        score->m_diamonds = item["diamonds"].asInt().unwrapOr(0);
+                        score->m_demons = item["demons"].asInt().unwrapOr(0);
+                        score->m_creatorPoints = item["cp"].asInt().unwrapOr(0);
+                        score->m_secretCoins = item["coins"].asInt().unwrapOr(0);
+                        score->m_userCoins = item["userCoins"].asInt().unwrapOr(0);
+
+                        score->m_playerRank = item["rank"].asInt().unwrapOr(0);
+                        score->m_globalRank = item["rank"].asInt().unwrapOr(0); 
+
+                        score->m_iconID = item["icon"]["icon"].asInt().unwrapOr(1);
+                        score->m_color1 = item["icon"]["col1"].asInt().unwrapOr(0);
+                        score->m_color2 = item["icon"]["col2"].asInt().unwrapOr(0);
+                        score->m_color3 = item["icon"]["colG"].asInt().unwrapOr(0); 
+                        score->m_glowEnabled = item["icon"]["glow"].asBool().unwrapOr(false);
+
+                        std::string form = item["icon"]["form"].asString().unwrapOr("cube");
+                        if (form == "ship") score->m_iconType = IconType::Ship;
+                        else if (form == "ball") score->m_iconType = IconType::Ball;
+                        else if (form == "ufo") score->m_iconType = IconType::Ufo;
+                        else if (form == "wave") score->m_iconType = IconType::Wave;
+                        else if (form == "robot") score->m_iconType = IconType::Robot;
+                        else if (form == "spider") score->m_iconType = IconType::Spider;
+                        else if (form == "swing") score->m_iconType = IconType::Swing;
+                        else if (form == "jetpack") score->m_iconType = IconType::Jetpack;
+                        else score->m_iconType = IconType::Cube;
+                        
+                        entries->addObject(score);
                     }
                 }
 
-                // open a new menu
-                // for each entry, display a user box like the ones in the leaderboards section (click on a name, 
-                // display it bigger, figure out how to replicate the same menu that robtop does) 
-                // include a back button to exit out
+                float listWidth = 358.f;
+                float listHeight = 220.f;
+
+                auto listView = CustomListView::create(entries, BoomListType::Score, listHeight, listWidth);
+
+                auto winSize = cocos2d::CCDirector::sharedDirector()->getWinSize();
+                listView->setPosition(winSize / 2 - listView->getScaledContentSize() / 2);
+                this->addChild(listView);
+
+                // TO DO: prevent duplicate button presses, make the menu behind disappear, change z-layer, fix bug with user levels not appearing
             }
         );
     }
