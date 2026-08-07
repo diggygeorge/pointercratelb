@@ -10,7 +10,6 @@
 
 using namespace geode::prelude;
 
-bool showLayer = false;
 matjson::Value data = matjson::makeObject({});
 class $modify(DemonlistLayer, LeaderboardsLayer) {
 
@@ -18,6 +17,12 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         TaskHolder<web::WebResponse> m_listener;
     };
     private:
+    void deleteLbLayer() {
+        auto listLayer = this->getChildByID("GJListLayer");
+        if (listLayer->getChildByID("list-view")) {
+            listLayer->removeChildByID("list-view");
+        }
+    }
     void insertDemonlistLeaderboards() {
         auto entries = cocos2d::CCArray::create();
         if (data.isArray()) {
@@ -64,15 +69,16 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         float listWidth = 358.f;
         float listHeight = 220.f;
 
+        deleteLbLayer();
         auto listView = CustomListView::create(entries, BoomListType::Score, listHeight, listWidth);
         listView->setPosition(CCPoint { 0.f, 0.f });
         auto listLayer = this->getChildByID("GJListLayer");
+        listView->setID("list-view");
         listLayer->addChild(listView);
     }
     public:
     void onButton(CCObject* sender) {
         geode::log::info("Button clicked!");
-        showLayer = !(showLayer && showLayer);
         if (data.size() != 0) {
             insertDemonlistLeaderboards();
             geode::log::info("Fetched CACHED data!");
@@ -84,9 +90,6 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
                     insertDemonlistLeaderboards();
                     geode::log::info("Fetched NEW data!");
                     /*
-                    - prevent duplicate button presses
-                    - make the menu behind disappear
-                    - change z-layer
                     - fix bug with user levels not appearing
                     - attach demonlist points
                     */
