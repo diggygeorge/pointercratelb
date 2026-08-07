@@ -10,74 +10,89 @@
 
 using namespace geode::prelude;
 
+bool showLayer = false;
+matjson::Value data = matjson::makeObject({});
 class $modify(DemonlistLayer, LeaderboardsLayer) {
 
     struct Fields {
         TaskHolder<web::WebResponse> m_listener;
     };
+    private:
+    void insertDemonlistLeaderboards() {
+        auto entries = cocos2d::CCArray::create();
+        if (data.isArray()) {
+            for (int i = 0; i < data.size(); i++) {
+                auto item = data[i];
+                auto score = GJUserScore::create();
+                    
+                score->m_userName = item["username"].asString().unwrapOr("Unknown");
+                score->m_userID = std::stoi(item["playerID"].asString().unwrapOr("0"));
+                score->m_accountID = std::stoi(item["accountID"].asString().unwrapOr("0"));
 
+                score->m_stars = item["stars"].asInt().unwrapOr(0);
+                score->m_moons = item["moons"].asInt().unwrapOr(0);
+                score->m_diamonds = item["diamonds"].asInt().unwrapOr(0);
+                score->m_demons = item["demons"].asInt().unwrapOr(0);
+                score->m_creatorPoints = item["cp"].asInt().unwrapOr(0);
+                score->m_secretCoins = item["coins"].asInt().unwrapOr(0);
+                score->m_userCoins = item["userCoins"].asInt().unwrapOr(0);
+
+                score->m_playerRank = item["rank"].asInt().unwrapOr(0);
+                score->m_globalRank = item["rank"].asInt().unwrapOr(0); 
+
+                score->m_iconID = item["icon"]["icon"].asInt().unwrapOr(1);
+                score->m_color1 = item["icon"]["col1"].asInt().unwrapOr(0);
+                score->m_color2 = item["icon"]["col2"].asInt().unwrapOr(0);
+                score->m_color3 = item["icon"]["colG"].asInt().unwrapOr(0); 
+                score->m_glowEnabled = item["icon"]["glow"].asBool().unwrapOr(false);
+
+                std::string form = item["icon"]["form"].asString().unwrapOr("cube");
+                if (form == "ship") score->m_iconType = IconType::Ship;
+                else if (form == "ball") score->m_iconType = IconType::Ball;
+                else if (form == "ufo") score->m_iconType = IconType::Ufo;
+                else if (form == "wave") score->m_iconType = IconType::Wave;
+                else if (form == "robot") score->m_iconType = IconType::Robot;
+                else if (form == "spider") score->m_iconType = IconType::Spider;
+                else if (form == "swing") score->m_iconType = IconType::Swing;
+                else if (form == "jetpack") score->m_iconType = IconType::Jetpack;
+                else score->m_iconType = IconType::Cube;
+                
+                entries->addObject(score);
+            }
+        }
+
+        float listWidth = 358.f;
+        float listHeight = 220.f;
+
+        auto listView = CustomListView::create(entries, BoomListType::Score, listHeight, listWidth);
+        listView->setPosition(CCPoint { 0.f, 0.f });
+        auto listLayer = this->getChildByID("GJListLayer");
+        listLayer->addChild(listView);
+    }
+    public:
     void onButton(CCObject* sender) {
         geode::log::info("Button clicked!");
-        
-        m_fields->m_listener.spawn(
-            fetchLeaderboardData(),
-            [this](web::WebResponse res) {
-                matjson::Value data = res.json().unwrapOr(matjson::makeObject({}));
-                auto entries = cocos2d::CCArray::create();
-
-                if (data.isArray()) {
-                    for (int i = 0; i < data.size(); i++) {
-                        auto item = data[i];
-                        auto score = GJUserScore::create();
-                            
-                        score->m_userName = item["username"].asString().unwrapOr("Unknown");
-                        score->m_userID = std::stoi(item["playerID"].asString().unwrapOr("0"));
-                        score->m_accountID = std::stoi(item["accountID"].asString().unwrapOr("0"));
-
-                        score->m_stars = item["stars"].asInt().unwrapOr(0);
-                        score->m_moons = item["moons"].asInt().unwrapOr(0);
-                        score->m_diamonds = item["diamonds"].asInt().unwrapOr(0);
-                        score->m_demons = item["demons"].asInt().unwrapOr(0);
-                        score->m_creatorPoints = item["cp"].asInt().unwrapOr(0);
-                        score->m_secretCoins = item["coins"].asInt().unwrapOr(0);
-                        score->m_userCoins = item["userCoins"].asInt().unwrapOr(0);
-
-                        score->m_playerRank = item["rank"].asInt().unwrapOr(0);
-                        score->m_globalRank = item["rank"].asInt().unwrapOr(0); 
-
-                        score->m_iconID = item["icon"]["icon"].asInt().unwrapOr(1);
-                        score->m_color1 = item["icon"]["col1"].asInt().unwrapOr(0);
-                        score->m_color2 = item["icon"]["col2"].asInt().unwrapOr(0);
-                        score->m_color3 = item["icon"]["colG"].asInt().unwrapOr(0); 
-                        score->m_glowEnabled = item["icon"]["glow"].asBool().unwrapOr(false);
-
-                        std::string form = item["icon"]["form"].asString().unwrapOr("cube");
-                        if (form == "ship") score->m_iconType = IconType::Ship;
-                        else if (form == "ball") score->m_iconType = IconType::Ball;
-                        else if (form == "ufo") score->m_iconType = IconType::Ufo;
-                        else if (form == "wave") score->m_iconType = IconType::Wave;
-                        else if (form == "robot") score->m_iconType = IconType::Robot;
-                        else if (form == "spider") score->m_iconType = IconType::Spider;
-                        else if (form == "swing") score->m_iconType = IconType::Swing;
-                        else if (form == "jetpack") score->m_iconType = IconType::Jetpack;
-                        else score->m_iconType = IconType::Cube;
-                        
-                        entries->addObject(score);
-                    }
+        showLayer = !(showLayer && showLayer);
+        if (data.size() != 0) {
+            insertDemonlistLeaderboards();
+            geode::log::info("Fetched CACHED data!");
+        } else {
+            m_fields->m_listener.spawn(
+                fetchLeaderboardData(),
+                [this](web::WebResponse res) {
+                    data = res.json().unwrapOr(matjson::makeObject({}));
+                    insertDemonlistLeaderboards();
+                    geode::log::info("Fetched NEW data!");
+                    /*
+                    - prevent duplicate button presses
+                    - make the menu behind disappear
+                    - change z-layer
+                    - fix bug with user levels not appearing
+                    - attach demonlist points
+                    */
                 }
-
-                float listWidth = 358.f;
-                float listHeight = 220.f;
-
-                auto listView = CustomListView::create(entries, BoomListType::Score, listHeight, listWidth);
-
-                auto winSize = cocos2d::CCDirector::sharedDirector()->getWinSize();
-                listView->setPosition(winSize / 2 - listView->getScaledContentSize() / 2);
-                this->addChild(listView);
-
-                // TO DO: prevent duplicate button presses, make the menu behind disappear, change z-layer, fix bug with user levels not appearing
-            }
-        );
+            );
+        }
     }
 
     void onTop(CCObject* sender) {
