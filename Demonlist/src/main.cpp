@@ -19,6 +19,10 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
     private:
     void deleteLbLayer() {
         auto listLayer = this->getChildByID("GJListLayer");
+        if (listLayer == nullptr) {
+            listLayer = this->getChildByID("list-layer");
+        }
+
         if (listLayer->getChildByID("list-view")) {
             listLayer->removeChildByID("list-view");
         }
@@ -68,27 +72,48 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
 
         float listWidth = 358.f;
         float listHeight = 220.f;
-
         deleteLbLayer();
         auto listView = CustomListView::create(entries, BoomListType::Score, listHeight, listWidth);
         listView->setPosition(CCPoint { 0.f, 0.f });
         auto listLayer = this->getChildByID("GJListLayer");
+        if (listLayer == nullptr) {
+            listLayer = this->getChildByID("list-layer");
+        }
+
         listView->setID("list-view");
         listLayer->addChild(listView);
     }
     public:
+    bool init(LeaderboardType type, LeaderboardStat stat) {
+        LeaderboardsLayer::init(type, stat);
+
+        auto top = this->getChildByID("top-100-menu");
+        if (top->getZOrder() == 2) {
+            auto rightMenu = this->getChildByID("right-side-menu");
+            auto topSprite = CCSprite::create("leaderboardLogo.png"_spr);
+
+            auto spr = CircleButtonSprite::create(topSprite);
+
+            auto btn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(DemonlistLayer::onButton));
+
+            btn->setPosition(rightMenu->getPosition() - CCPoint { 492.5f, 180.f });
+            btn->setID("demonlist-button");
+            rightMenu->addChild(btn);
+        }
+        return true;
+    }
     void onButton(CCObject* sender) {
         geode::log::info("Button clicked!");
         if (data.size() != 0) {
+            // Cache data
             insertDemonlistLeaderboards();
-            geode::log::info("Fetched CACHED data!");
         } else {
+            // fetch leaderboard data
             m_fields->m_listener.spawn(
                 fetchLeaderboardData(),
                 [this](web::WebResponse res) {
                     data = res.json().unwrapOr(matjson::makeObject({}));
                     insertDemonlistLeaderboards();
-                    geode::log::info("Fetched NEW data!");
                     /*
                     - fix bug with user levels not appearing
                     - attach demonlist points
@@ -119,6 +144,17 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
     }
     void onCreators(CCObject* sender) {
         LeaderboardsLayer::onCreators(sender);
+        // geode::log::info("Creator tab!");
+
+        auto rightMenu = this->getChildByID("right-side-menu");
+        if (rightMenu->getChildByID("demonlist-button")) {
+            rightMenu->removeChildByID("demonlist-button");
+            return;
+        }
+    }
+
+    void onBack(CCObject* sender) {
+        LeaderboardsLayer::onBack(sender);
         // geode::log::info("Creator tab!");
 
         auto rightMenu = this->getChildByID("right-side-menu");
