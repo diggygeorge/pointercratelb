@@ -7,7 +7,7 @@
 #include <matjson.hpp>
 #include <iostream>
 
-#include "lb.hpp"
+#include "/lb/lb.hpp"
 
 using namespace geode::prelude;
 
@@ -86,11 +86,6 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         listView->setID("list-view");
         listLayer->addChild(listView);
         listView->setPosition(CCPoint { 0.f, 0.f });
-        // create info button
-        auto rightMenu = this->getChildByID("right-side-menu");
-        auto infoButton = InfoAlertButton::create("Demonlist Leaderboards", "Calculated by Pointercrate.  Details can be found on https://pointercrate.com/.", 1.0f);
-        infoButton->setID("demonlist-info");
-        rightMenu->addChild(infoButton);
     }
     public:
     bool init(LeaderboardType type, LeaderboardStat stat) {
@@ -111,6 +106,10 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
             btn->setID("demonlist-button");
             rightMenu->addChild(btn);
             btn->setPosition(rightMenu->getPosition() - CCPoint { 492.5f, 180.f });
+            auto infoButton = InfoAlertButton::create("Demonlist Leaderboards", "Calculated by Pointercrate.  Details can be found on https://pointercrate.com/.", 1.0f);
+            infoButton->setID("demonlist-info");
+            rightMenu->addChild(infoButton);
+            infoButton->setPosition(rightMenu->getPosition() - CCPoint { 452.5f, 180.f });
         }
         return true;
     }
@@ -148,6 +147,10 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         btn->setID("demonlist-button");
         rightMenu->addChild(btn);
         btn->setPosition(rightMenu->getPosition() - CCPoint { 492.5f, 180.f });
+        auto infoButton = InfoAlertButton::create("Demonlist Leaderboards", "The Demonlist leaderboards is sorted by Demonlist Points, managed by Pointercrate.  Details can be found on https://pointercrate.com/", 1.0f);
+        infoButton->setID("demonlist-info");
+        rightMenu->addChild(infoButton);
+        infoButton->setPosition(rightMenu->getPosition() - CCPoint { 448.5f, 180.f });
     }
     void onCreators(CCObject* sender) {
         LeaderboardsLayer::onCreators(sender);
@@ -156,8 +159,9 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         auto rightMenu = this->getChildByID("right-side-menu");
         if (rightMenu->getChildByID("demonlist-button")) {
             rightMenu->removeChildByID("demonlist-button");
-            return;
+            rightMenu->removeChildByID("demonlist-info");
         }
+        return;
     }
 
     void onBack(CCObject* sender) {
@@ -167,7 +171,7 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         auto rightMenu = this->getChildByID("right-side-menu");
         if (rightMenu->getChildByID("demonlist-button")) {
             rightMenu->removeChildByID("demonlist-button");
-            return;
+            rightMenu->removeChildByID("demonlist-info");
         }
     }
     void onGlobal(CCObject* sender) {
@@ -177,7 +181,7 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         auto rightMenu = this->getChildByID("right-side-menu");
         if (rightMenu->getChildByID("demonlist-button")) {
             rightMenu->removeChildByID("demonlist-button");
-            return;
+            rightMenu->removeChildByID("demonlist-info");
         }
     }
     void onWeek(CCObject* sender) {
@@ -187,8 +191,7 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         auto rightMenu = this->getChildByID("right-side-menu");
         if (rightMenu->getChildByID("demonlist-button")) {
             rightMenu->removeChildByID("demonlist-button");
-            return;
+            rightMenu->removeChildByID("demonlist-info");
         }
-
     }
 };
