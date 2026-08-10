@@ -6,11 +6,11 @@
 		"mac": "2.2081",
 		"ios": "2.2081"
 	},
-	"id": "falzar.helloworld",
-	"name": "helloworld",
+	"id": "falzar.pointercrate",
+	"name": "Pointercrate Demonlist",
 	"version": "v1.0.0",
 	"developer": "Falzar",
-	"description": "",
+	"description": "Displays the live Pointercrate demonlist in-game.",
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3"
 	},

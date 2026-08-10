@@ -1,6 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/LeaderboardsLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
+#include <Geode/binding/InfoAlertButton.hpp>
 #include <Geode/utils/web.hpp>
 #include <Geode/utils/async.hpp>
 #include <matjson.hpp>
@@ -28,11 +29,12 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         }
     }
     void insertDemonlistLeaderboards() {
-        auto entries = cocos2d::CCArray::create();
+        auto entries = CCArray::create();
         if (data.isArray()) {
             for (int i = 0; i < data.size(); i++) {
                 auto item = data[i];
                 auto score = GJUserScore::create();
+                // demonlist points: score->;
                     
                 score->m_userName = item["username"].asString().unwrapOr("Unknown");
                 score->m_userID = std::stoi(item["playerID"].asString().unwrapOr("0"));
@@ -41,7 +43,7 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
                 score->m_stars = item["stars"].asInt().unwrapOr(0);
                 score->m_moons = item["moons"].asInt().unwrapOr(0);
                 score->m_diamonds = item["diamonds"].asInt().unwrapOr(0);
-                score->m_demons = item["demons"].asInt().unwrapOr(0);
+                score->m_demons = item["demonList"]["points"].asDouble().unwrapOr(0.0);
                 score->m_creatorPoints = item["cp"].asInt().unwrapOr(0);
                 score->m_secretCoins = item["coins"].asInt().unwrapOr(0);
                 score->m_userCoins = item["userCoins"].asInt().unwrapOr(0);
@@ -65,7 +67,9 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
                 else if (form == "swing") score->m_iconType = IconType::Swing;
                 else if (form == "jetpack") score->m_iconType = IconType::Jetpack;
                 else score->m_iconType = IconType::Cube;
-                
+                geode::log::info("Account ID: {}", score->m_accountID);
+                geode::log::info("User ID: {}", score->m_userID);
+                GameLevelManager::sharedState()->storeUserName(score->m_userID, score->m_accountID, score->m_userName);
                 entries->addObject(score);
             }
         }
@@ -74,7 +78,6 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         float listHeight = 220.f;
         deleteLbLayer();
         auto listView = CustomListView::create(entries, BoomListType::Score, listHeight, listWidth);
-        listView->setPosition(CCPoint { 0.f, 0.f });
         auto listLayer = this->getChildByID("GJListLayer");
         if (listLayer == nullptr) {
             listLayer = this->getChildByID("list-layer");
@@ -82,23 +85,32 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
 
         listView->setID("list-view");
         listLayer->addChild(listView);
+        listView->setPosition(CCPoint { 0.f, 0.f });
+        // create info button
+        auto rightMenu = this->getChildByID("right-side-menu");
+        auto infoButton = InfoAlertButton::create("Demonlist Leaderboards", "Calculated by Pointercrate.  Details can be found on https://pointercrate.com/.", 1.0f);
+        infoButton->setID("demonlist-info");
+        rightMenu->addChild(infoButton);
     }
     public:
     bool init(LeaderboardType type, LeaderboardStat stat) {
-        LeaderboardsLayer::init(type, stat);
+        if (!LeaderboardsLayer::init(type, stat)) {
+            return false;
+        }
 
         auto top = this->getChildByID("top-100-menu");
         if (top->getZOrder() == 2) {
             auto rightMenu = this->getChildByID("right-side-menu");
+            // create demonlist button
             auto topSprite = CCSprite::create("leaderboardLogo.png"_spr);
 
             auto spr = CircleButtonSprite::create(topSprite);
 
             auto btn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(DemonlistLayer::onButton));
 
-            btn->setPosition(rightMenu->getPosition() - CCPoint { 492.5f, 180.f });
             btn->setID("demonlist-button");
             rightMenu->addChild(btn);
+            btn->setPosition(rightMenu->getPosition() - CCPoint { 492.5f, 180.f });
         }
         return true;
     }
@@ -114,10 +126,6 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
                 [this](web::WebResponse res) {
                     data = res.json().unwrapOr(matjson::makeObject({}));
                     insertDemonlistLeaderboards();
-                    /*
-                    - fix bug with user levels not appearing
-                    - attach demonlist points
-                    */
                 }
             );
         }
@@ -137,10 +145,9 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         auto spr = CircleButtonSprite::create(topSprite);
 
         auto btn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(DemonlistLayer::onButton));
-
-        btn->setPosition(rightMenu->getPosition() - CCPoint { 492.5f, 180.f });
         btn->setID("demonlist-button");
         rightMenu->addChild(btn);
+        btn->setPosition(rightMenu->getPosition() - CCPoint { 492.5f, 180.f });
     }
     void onCreators(CCObject* sender) {
         LeaderboardsLayer::onCreators(sender);
