@@ -7,7 +7,7 @@
 #include <matjson.hpp>
 #include <iostream>
 
-#include "/lb/lb.hpp"
+#include "lb.hpp"
 
 using namespace geode::prelude;
 

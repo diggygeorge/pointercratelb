@@ -16,7 +16,8 @@
 	},
     "resources": {
         "sprites": [
-            "resources/leaderboardLogo.png"
+            "resources/leaderboardLogo.png",
+			"resources/list.png"
 		]
     }
 }
