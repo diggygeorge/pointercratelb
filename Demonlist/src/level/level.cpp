@@ -7,11 +7,28 @@
 #include <iostream>
 #include <Geode/modify/DemonFilterSelectLayer.hpp>
 
-// #include "list.hpp"
+#include "list.hpp"
 
 using namespace geode::prelude;
 
 class $modify(MyDemonFilterSelectLayer, DemonFilterSelectLayer) {
+    struct Fields {
+        TaskHolder<web::WebResponse> m_listener;
+    };
+
+    private:
+    void onButton(CCObject* sender) {
+        geode::log::info("Button clicked!");
+        
+        m_fields->m_listener.spawn(
+            fetchListData("0"),
+            [](web::WebResponse res) {
+                geode::log::info("{}", res.string().unwrapOr("Uh oh!"));
+            }
+        );
+    }
+
+    public:
     bool init() {
         if (!DemonFilterSelectLayer::init()) {
             return false;
@@ -35,9 +52,7 @@ class $modify(MyDemonFilterSelectLayer, DemonFilterSelectLayer) {
         extremeDemon->setPosition({120.f, 3.f});
 
         auto topSprite = CCSprite::create("list.png"_spr);
-
-        auto spr = ButtonSprite::create(topSprite);
-        auto btn = CCMenuItemSpriteExtra::create(topSprite, this, nullptr);
+        auto btn = CCMenuItemSpriteExtra::create(topSprite, this, menu_selector(MyDemonFilterSelectLayer::onButton));
         btn->setID("list-filter-button");
         demonFilters->addChild(btn);
         btn->setPosition({180.f, 3.f});

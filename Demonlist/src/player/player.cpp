@@ -87,6 +87,22 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         listLayer->addChild(listView);
         listView->setPosition(CCPoint { 0.f, 0.f });
     }
+    void onButton(CCObject* sender) {
+        geode::log::info("Button clicked!");
+        if (data.size() != 0) {
+            // Cache data
+            insertDemonlistLeaderboards();
+        } else {
+            // fetch leaderboard data
+            m_fields->m_listener.spawn(
+                fetchLeaderboardData(),
+                [this](web::WebResponse res) {
+                    data = res.json().unwrapOr(matjson::makeObject({}));
+                    insertDemonlistLeaderboards();
+                }
+            );
+        }
+    }
     public:
     bool init(LeaderboardType type, LeaderboardStat stat) {
         if (!LeaderboardsLayer::init(type, stat)) {
@@ -112,22 +128,6 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
             infoButton->setPosition(rightMenu->getPosition() - CCPoint { 452.5f, 180.f });
         }
         return true;
-    }
-    void onButton(CCObject* sender) {
-        geode::log::info("Button clicked!");
-        if (data.size() != 0) {
-            // Cache data
-            insertDemonlistLeaderboards();
-        } else {
-            // fetch leaderboard data
-            m_fields->m_listener.spawn(
-                fetchLeaderboardData(),
-                [this](web::WebResponse res) {
-                    data = res.json().unwrapOr(matjson::makeObject({}));
-                    insertDemonlistLeaderboards();
-                }
-            );
-        }
     }
 
     void onTop(CCObject* sender) {
