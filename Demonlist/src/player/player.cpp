@@ -67,8 +67,6 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
                 else if (form == "swing") score->m_iconType = IconType::Swing;
                 else if (form == "jetpack") score->m_iconType = IconType::Jetpack;
                 else score->m_iconType = IconType::Cube;
-                geode::log::info("Account ID: {}", score->m_accountID);
-                geode::log::info("User ID: {}", score->m_userID);
                 GameLevelManager::sharedState()->storeUserName(score->m_userID, score->m_accountID, score->m_userName);
                 entries->addObject(score);
             }
