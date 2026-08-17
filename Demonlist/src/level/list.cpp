@@ -7,7 +7,7 @@ using namespace geode::prelude;
 
 web::WebFuture fetchListData(std::string page) {
     auto req = web::WebRequest();
-    req.param("count", "25");
+    req.param("count", "10");
     req.param("type", "demonlist");
     req.param("page", page);
     req.header("Content-Type", "application/json");

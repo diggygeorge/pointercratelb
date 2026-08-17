@@ -5,6 +5,7 @@
 #include <Geode/utils/async.hpp>
 #include <matjson.hpp>
 #include <iostream>
+#include <string>
 #include <Geode/modify/DemonFilterSelectLayer.hpp>
 #include <Geode/modify/LevelBrowserLayer.hpp>
 #include <Geode/binding/GJSearchObject.hpp>
@@ -13,16 +14,105 @@
 using namespace geode::prelude;
 
 class $modify(DemonBrowserLayer, LevelBrowserLayer) {
+    struct Fields {
+        int m_customPage;
+        TaskHolder<web::WebResponse> m_listener;
+    };
+    private:
+    void customSceneWithIndex(int page) {
+        std::string pg = std::to_string(page);
+        m_fields->m_listener.spawn(
+             fetchListData(pg),
+             [](web::WebResponse res) {
+                matjson::Value data = res.json().unwrapOr(matjson::makeObject({}));
+                // take all the ids, join them by id
+                std::string values = "";
+                for (int i = 0; i < data.size(); i++) {
+                    auto item = data[i];
+                    auto id = item["id"].asString().unwrapOr("0");
+                    values = values + id + ",";
+                }
+                if (!values.empty()) {
+                    values.resize(values.size() - 1);
+                }
+                geode::log::info("{}", values);
+            }
+         );
+    }
+
     public:
-    static LevelBrowserLayer* create(GJSearchObject* object) {
+
+    // creates demonbrowserlayer object 
+    static LevelBrowserLayer* customCreate() {
+        std::string customIDs = "127323087,119544028,126242564,119550490,86407629,142896409,133175713,109780665,117692518,110816181";
+        GJSearchObject* object = GJSearchObject::create(SearchType::Type19, customIDs);
         return LevelBrowserLayer::create(object);
+    }
+
+    bool init(GJSearchObject* object) {
+        if (!LevelBrowserLayer::init(object)) return false;
+
+        auto winSize = CCDirector::get()->getWinSize();
+
+        auto arrowMenu = CCMenu::create();
+        arrowMenu->setID("arrow-menu");
+        arrowMenu->setPosition(0, 0);
+
+        if (m_fields->m_customPage < 14) {
+            auto leftArrowSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
+            leftArrowSprite->setFlipX(true);
+            auto nextBtn = CCMenuItemSpriteExtra::create(
+                leftArrowSprite,
+                this,
+                menu_selector(DemonBrowserLayer::customNextPage)
+            );
+            arrowMenu->addChild(nextBtn);
+            nextBtn->setPosition(winSize.width - 25.f, winSize.height / 2.f);
+            nextBtn->setID("next-arrow");
+        }
+
+        if (m_fields->m_customPage > 0) {
+            auto prevBtn = CCMenuItemSpriteExtra::create(
+                CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png"),
+                this,
+                menu_selector(DemonBrowserLayer::customPrevPage)
+            );
+            arrowMenu->addChild(prevBtn);
+            prevBtn->setPosition(25.f, winSize.height / 2.f);
+            prevBtn->setID("prev-arrow");
+        }
+
+        this->addChild(arrowMenu, 10);
+
+        return true;
+    }
+
+    void customNextPage(cocos2d::CCObject* sender) {
+        m_fields->m_customPage++;
+        this->customSceneWithIndex(m_fields->m_customPage);
+        //CCDirector::get()->replaceScene(scene);
+        /*
+        auto newLayer = DemonBrowserLayer::create(searchObj);
+        newLayer->m_customPage = this->m_customPage;
+        auto scene = CCScene::create();
+        scene->addChild(newLayer);
+        CCDirector::get()->replaceScene(scene);
+
+        OR
+        auto scene = customSceneWithIndex(m_fields->m_customPage)
+        CCDirector::get()->replaceScene(scene);
+        */
+    }
+
+    void customPrevPage(cocos2d::CCObject* sender) {
+        LevelBrowserLayer::onPrevPage(sender);
+        m_fields->m_customPage--;
+        this->customSceneWithIndex(m_fields->m_customPage);
+        //CCDirector::get()->replaceScene(scene);
     }
 };
 
 class $modify(MyDemonFilterSelectLayer, DemonFilterSelectLayer) {
-    struct Fields {
-        TaskHolder<web::WebResponse> m_listener;
-    };
 
     private:
     void onButton(CCObject* sender) {
@@ -31,17 +121,10 @@ class $modify(MyDemonFilterSelectLayer, DemonFilterSelectLayer) {
         // OR you could do the API stuff but then create a new type of levelbrowserlayer if you wish to display the rank within each of the sections
         // PLAN THIS OUT
         
-        std::string chosenIDs = "127323087,119544028,126242564,119550490,86407629,142896409,133175713,109780665,117692518,110816181,135661111,116174063,134942736,4125776,62912799,138704906,114283297,138781722,127997391,112313819,89496627,73667628,110815379,107805281,49896559,120012581,91351939,86018142,110534288,93917076,27690100,113599729,87665224,48991380,130327668,93091893,141052363,114281093,134541844,76962930,113045735,136396693,95851008,131599104,109439644,49072489,75206202,113959291,115077305,120289520,113322063,143718114,85133223,136981369,89414220,90477539,113443235,120255728,81139702,94359172,126571887,96314787,83244159,89187968,139508889,90390075,104232191,86084399,114990369,94969889,62556400,113256247,82544060,131497860,113220284,99703915,81011195,119689515,125317359,114999625,93339534,95719795,95998005,110500920,95049815,105593215,125788781,128093374,82249742,122941596,136135870,96083028,133489881,93340783,103925676,72315402,73214186,93792764,129235528,69685815,59075347,108708033,110991117,95031870,93917362,137757402,109947627,94858072,107741051,130464801,60978746,71025973,107238250,95176417,90057148,76543324,97086864,88203501,104672501,75286957,137334994,105748155,88442157,87130877,93732702,110705712,71885708,113364415,87071894,112242564,79771070,127023313,100990392,115380769,80714349,71434979,120060187,58673581,65588448,128385946,114530859,78435955,137586316,99495619,122389640,88611404,122196131,125617849,112231282,105625871";
-        auto obj = GJSearchObject::create(static_cast<SearchType>(10), chosenIDs);
-        // auto searchObj = DemonBrowserLayer::create(obj);
-        auto scene = LevelBrowserLayer::scene(obj);
+        auto newLayer = DemonBrowserLayer::customCreate();
+        auto scene = CCScene::create();
+        scene->addChild(newLayer);
         CCDirector::get()->pushScene(CCTransitionFade::create(0.5f, scene));
-        // m_fields->m_listener.spawn(
-        //     fetchListData("0"),
-        //     [](web::WebResponse res) {
-        //         geode::log::info("{}", res.string().unwrapOr("Uh oh!"));
-        //     }
-        // );
     }
 
     public:
