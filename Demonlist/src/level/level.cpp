@@ -14,15 +14,14 @@
 #include "list.hpp" 
 using namespace geode::prelude;
 
-class $modify(DemonBrowserLayer, LevelBrowserLayer) {
-    struct Fields {
+class DemonBrowserLayer : public LevelBrowserLayer {
+    private:
         int m_customPage;
         TaskHolder<web::WebResponse> m_listener;
-    };
-    private:
+
     void customSceneWithIndex(int page) {
         std::string pg = std::to_string(page);
-        m_fields->m_listener.spawn(
+        this->m_listener.spawn(
              fetchListData(pg),
              [this](web::WebResponse res) {
                 matjson::Value data = res.json().unwrapOr(matjson::makeObject({}));
@@ -46,12 +45,10 @@ class $modify(DemonBrowserLayer, LevelBrowserLayer) {
     public:
 
     void setupPageInfo(gd::string info, const char* key) {
-        LevelBrowserLayer::setupPageInfo(info, key);
-
         if (auto label = typeinfo_cast<CCLabelBMFont*>(this->getChildByID("level-count-label"))) {
             
             int total = 150;
-            int start = (m_fields->m_customPage * 10) + 1;
+            int start = (this->m_customPage * 10) + 1;
             int end = start + 9;
 
             if (end > total) {
@@ -64,14 +61,50 @@ class $modify(DemonBrowserLayer, LevelBrowserLayer) {
     }
 
     // creates demonbrowserlayer object 
-    static LevelBrowserLayer* customCreate() {
-        std::string customIDs = "127323087,119544028,126242564,119550490,86407629,142896409,133175713,109780665,117692518,110816181";
-        GJSearchObject* object = GJSearchObject::create(SearchType::Type19, customIDs);
-        return LevelBrowserLayer::create(object);
+    static DemonBrowserLayer* create() {
+        auto ret = new DemonBrowserLayer();
+        
+        if (ret && ret->init()) {
+            ret->autorelease();
+            return ret;
+        }
+        
+        CC_SAFE_DELETE(ret);
+        return nullptr;
     }
 
-    bool init(GJSearchObject* object) {
-        if (!LevelBrowserLayer::init(object)) return false;
+    bool init() {
+        auto placeholder = GJSearchObject::create(
+            SearchType::Type19, "0", "-", "-", 0, false, false, false, 0, 
+            false, false, false, false, false, false, false, false, false, false, 0, 0, 0
+        );
+
+        if (!LevelBrowserLayer::init(placeholder)) return false;
+
+        this->m_listener.spawn(
+            fetchListData("0"),
+            [this](web::WebResponse res) {
+                
+                matjson::Value data = res.json().unwrapOr(matjson::makeObject({}));
+                std::string values = "";
+                for (int i = 0; i < data.size(); i++) {
+                    auto item = data[i];
+                    auto id = item["id"].asString().unwrapOr("0");
+                    values = values + id + ",";
+                }
+                if (!values.empty()) {
+                    values.resize(values.size() - 1);
+                }
+
+                auto realObject = GJSearchObject::create(
+                    SearchType::Type19, values, "-", "-", 0, false, false, false, 0, 
+                    false, false, false, false, false, false, false, false, false, false, 0, 0, 0
+                );
+
+                this->setSearchObject(realObject);
+                this->loadPage(realObject);
+            }
+        );
 
         auto winSize = CCDirector::get()->getWinSize();
 
@@ -84,7 +117,7 @@ class $modify(DemonBrowserLayer, LevelBrowserLayer) {
         auto nextBtn = CCMenuItemSpriteExtra::create(
             leftArrowSprite,
             this,
-            menu_selector(DemonBrowserLayer::customNextPage)
+            menu_selector(DemonBrowserLayer::onNextPage)
         );
         arrowMenu->addChild(nextBtn);
         nextBtn->setPosition(winSize.width - 25.f, winSize.height / 2.f);
@@ -95,31 +128,31 @@ class $modify(DemonBrowserLayer, LevelBrowserLayer) {
         return true;
     }
 
-    void customNextPage(cocos2d::CCObject* sender) {
-        m_fields->m_customPage++;
-        this->customSceneWithIndex(m_fields->m_customPage);
+    void onNextPage(cocos2d::CCObject* sender) {
+        this->m_customPage++;
+        this->customSceneWithIndex(this->m_customPage);
         auto arrowMenu = this->getChildByID("arrow-menu");
         auto winSize = CCDirector::get()->getWinSize();
         arrowMenu->removeChildByID("next-arrow");
         arrowMenu->removeChildByID("prev-arrow");
 
-        if (m_fields->m_customPage < 14) {
+        if (this->m_customPage < 14) {
             auto leftArrowSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
             leftArrowSprite->setFlipX(true);
             auto nextBtn = CCMenuItemSpriteExtra::create(
                 leftArrowSprite,
                 this,
-                menu_selector(DemonBrowserLayer::customNextPage)
+                menu_selector(DemonBrowserLayer::onNextPage)
             );
             arrowMenu->addChild(nextBtn);
             nextBtn->setPosition(winSize.width - 25.f, winSize.height / 2.f);
             nextBtn->setID("next-arrow");
         }
-        if (m_fields->m_customPage > 0) {
+        if (this->m_customPage > 0) {
             auto prevBtn = CCMenuItemSpriteExtra::create(
                 CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png"),
                 this,
-                menu_selector(DemonBrowserLayer::customPrevPage)
+                menu_selector(DemonBrowserLayer::onPrevPage)
             );
             arrowMenu->addChild(prevBtn);
             prevBtn->setPosition(25.f, winSize.height / 2.f);
@@ -127,30 +160,30 @@ class $modify(DemonBrowserLayer, LevelBrowserLayer) {
         }
     }
 
-    void customPrevPage(cocos2d::CCObject* sender) {
-        m_fields->m_customPage--;
-        this->customSceneWithIndex(m_fields->m_customPage);
+    void onPrevPage(cocos2d::CCObject* sender) {
+        this->m_customPage--;
+        this->customSceneWithIndex(this->m_customPage);
         auto arrowMenu = this->getChildByID("arrow-menu");
         auto winSize = CCDirector::get()->getWinSize();
         arrowMenu->removeChildByID("next-arrow");
         arrowMenu->removeChildByID("prev-arrow");
-        if (m_fields->m_customPage < 14) {
+        if (this->m_customPage < 14) {
             auto leftArrowSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png");
             leftArrowSprite->setFlipX(true);
             auto nextBtn = CCMenuItemSpriteExtra::create(
                 leftArrowSprite,
                 this,
-                menu_selector(DemonBrowserLayer::customNextPage)
+                menu_selector(DemonBrowserLayer::onNextPage)
             );
             arrowMenu->addChild(nextBtn);
             nextBtn->setPosition(winSize.width - 25.f, winSize.height / 2.f);
             nextBtn->setID("next-arrow");
         }
-        if (m_fields->m_customPage > 0) {
+        if (this->m_customPage > 0) {
             auto prevBtn = CCMenuItemSpriteExtra::create(
                 CCSprite::createWithSpriteFrameName("GJ_arrow_03_001.png"),
                 this,
-                menu_selector(DemonBrowserLayer::customPrevPage)
+                menu_selector(DemonBrowserLayer::onPrevPage)
             );
             arrowMenu->addChild(prevBtn);
             prevBtn->setPosition(25.f, winSize.height / 2.f);
@@ -164,11 +197,8 @@ class $modify(MyDemonFilterSelectLayer, DemonFilterSelectLayer) {
     private:
     void onButton(CCObject* sender) {
         geode::log::info("Button clicked!");
-        // TO DO: call IDs from an API, string them together, and store it into chosenIDs
-        // OR you could do the API stuff but then create a new type of levelbrowserlayer if you wish to display the rank within each of the sections
-        // PLAN THIS OUT
         
-        auto newLayer = DemonBrowserLayer::customCreate();
+        auto newLayer = DemonBrowserLayer::create();
         auto scene = CCScene::create();
         scene->addChild(newLayer);
         CCDirector::get()->pushScene(CCTransitionFade::create(0.5f, scene));
