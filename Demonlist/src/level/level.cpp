@@ -10,16 +10,21 @@
 #include <Geode/modify/LevelBrowserLayer.hpp>
 #include <Geode/binding/GJSearchObject.hpp>
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/modify/LevelCell.hpp>
+#include <Geode/binding/GJGameLevel.hpp>
+#include <Geode/utils/SeedValue.hpp>
 
 #include "list.hpp" 
 using namespace geode::prelude;
+
+static std::unordered_map<std::string, int> s_demonRanks;
 
 class DemonBrowserLayer : public LevelBrowserLayer {
     private:
         int m_customPage;
         TaskHolder<web::WebResponse> m_listener;
 
-    void customSceneWithIndex(int page) {
+    void loadPageByIndex(int page) {
         std::string pg = std::to_string(page);
         this->m_listener.spawn(
              fetchListData(pg),
@@ -30,6 +35,7 @@ class DemonBrowserLayer : public LevelBrowserLayer {
                 for (int i = 0; i < data.size(); i++) {
                     auto item = data[i];
                     auto id = item["id"].asString().unwrapOr("0");
+                    s_demonRanks[id] = (this->m_customPage * 10) + 1 + i;
                     values = values + id + ",";
                 }
                 if (!values.empty()) {
@@ -74,10 +80,7 @@ class DemonBrowserLayer : public LevelBrowserLayer {
     }
 
     bool init() {
-        auto placeholder = GJSearchObject::create(
-            SearchType::Type19, "0", "-", "-", 0, false, false, false, 0, 
-            false, false, false, false, false, false, false, false, false, false, 0, 0, 0
-        );
+        auto placeholder = GJSearchObject::create(SearchType::Type19, "0");
 
         if (!LevelBrowserLayer::init(placeholder)) return false;
 
@@ -90,16 +93,14 @@ class DemonBrowserLayer : public LevelBrowserLayer {
                 for (int i = 0; i < data.size(); i++) {
                     auto item = data[i];
                     auto id = item["id"].asString().unwrapOr("0");
+                    s_demonRanks[id] = (this->m_customPage * 10) + 1 + i;
                     values = values + id + ",";
                 }
                 if (!values.empty()) {
                     values.resize(values.size() - 1);
                 }
 
-                auto realObject = GJSearchObject::create(
-                    SearchType::Type19, values, "-", "-", 0, false, false, false, 0, 
-                    false, false, false, false, false, false, false, false, false, false, 0, 0, 0
-                );
+                auto realObject = GJSearchObject::create(SearchType::Type19, values);
 
                 this->setSearchObject(realObject);
                 this->loadPage(realObject);
@@ -130,7 +131,7 @@ class DemonBrowserLayer : public LevelBrowserLayer {
 
     void onNextPage(cocos2d::CCObject* sender) {
         this->m_customPage++;
-        this->customSceneWithIndex(this->m_customPage);
+        this->loadPageByIndex(this->m_customPage);
         auto arrowMenu = this->getChildByID("arrow-menu");
         auto winSize = CCDirector::get()->getWinSize();
         arrowMenu->removeChildByID("next-arrow");
@@ -162,7 +163,7 @@ class DemonBrowserLayer : public LevelBrowserLayer {
 
     void onPrevPage(cocos2d::CCObject* sender) {
         this->m_customPage--;
-        this->customSceneWithIndex(this->m_customPage);
+        this->loadPageByIndex(this->m_customPage);
         auto arrowMenu = this->getChildByID("arrow-menu");
         auto winSize = CCDirector::get()->getWinSize();
         arrowMenu->removeChildByID("next-arrow");
@@ -188,6 +189,29 @@ class DemonBrowserLayer : public LevelBrowserLayer {
             arrowMenu->addChild(prevBtn);
             prevBtn->setPosition(25.f, winSize.height / 2.f);
             prevBtn->setID("prev-arrow");
+        }
+    }
+};
+
+class $modify(RankedLevelCell, LevelCell) {
+    void loadFromLevel(GJGameLevel* level) {
+        LevelCell::loadFromLevel(level);
+        int id = level->m_levelID;
+        auto it = s_demonRanks.find(std::to_string(id));
+
+        if (it == s_demonRanks.end()) return;
+
+        int demonRank = it->second;
+
+        std::string rankText = "#" + std::to_string(demonRank);
+        auto rankLabel = cocos2d::CCLabelBMFont::create(rankText.c_str(), "bigFont.fnt");
+        rankLabel->setScale(0.6f); 
+        
+        if (auto mainLayer = this->getChildByID("main-layer")) {
+            rankLabel->setScale(0.5f);
+            rankLabel->setPosition({ 325.f, 15.f }); 
+            rankLabel->setID("pointercrate-rank-label");
+            mainLayer->addChild(rankLabel);
         }
     }
 };
