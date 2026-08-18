@@ -6,12 +6,79 @@
 #include <Geode/utils/async.hpp>
 #include <matjson.hpp>
 #include <iostream>
+#include <Geode/modify/GJScoreCell.hpp>
 
 #include "lb.hpp"
 
 using namespace geode::prelude;
 
 matjson::Value data = matjson::makeObject({});
+class GJPointercrateScore : public GJUserScore {
+    private:
+        double m_listPoints;
+    public:
+    static GJPointercrateScore* create() {
+        auto ret = new GJPointercrateScore();
+        
+        if (ret && ret->init()) {
+            ret->autorelease();
+            return ret;
+        }
+        
+        CC_SAFE_DELETE(ret);
+        return nullptr;
+    }
+
+    bool init() {
+        if (!GJUserScore::init()) {
+            return false;
+        }
+        return true;
+    }
+
+    void setPoints(double listPoints) {
+        this->m_listPoints = listPoints;
+    }
+
+    double getPoints() {
+        return this->m_listPoints;
+    }
+};
+class $modify(GJScoreCell) {
+    void loadFromScore(GJUserScore* score) {
+        GJScoreCell::loadFromScore(score);
+        if (auto p_score = dynamic_cast<GJPointercrateScore*>(score)) {
+            double listPoints = p_score->getPoints();
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(2) << listPoints;
+            std::string pointsText = ss.str() + " Points";
+
+            auto pointsLabel = cocos2d::CCLabelBMFont::create(pointsText.c_str(), "bigFont.fnt");
+            pointsLabel->setScale(0.45f);
+            pointsLabel->setID("pointercrate-points-label");
+
+            if (auto mainLayer = static_cast<cocos2d::CCLayer*>(this->getChildren()->objectAtIndex(1))) {
+                
+                if (auto starsIcon = mainLayer->getChildByID("stars-icon")) starsIcon->setVisible(false);
+                if (auto starsLabel = mainLayer->getChildByID("stars-label")) starsLabel->setVisible(false);
+                if (auto moonsIcon = mainLayer->getChildByID("moons-icon")) moonsIcon->setVisible(false);
+                if (auto moonsLabel = mainLayer->getChildByID("moons-label")) moonsLabel->setVisible(false);
+
+                if (auto referenceNode = mainLayer->getChildByID("stars-label")) {
+                    pointsLabel->setAnchorPoint({0.f, 0.5f});
+                    pointsLabel->setPosition(referenceNode->getPosition());
+                } else {
+                    pointsLabel->setAnchorPoint({0.f, 0.5f});
+                    pointsLabel->setPosition({ 45.f, 25.f });
+                }
+
+                pointsLabel->setColor({255, 57, 80});
+
+                mainLayer->addChild(pointsLabel);
+            }
+        }
+    }
+};
 class $modify(DemonlistLayer, LeaderboardsLayer) {
 
     struct Fields {
@@ -33,17 +100,17 @@ class $modify(DemonlistLayer, LeaderboardsLayer) {
         if (data.isArray()) {
             for (int i = 0; i < data.size(); i++) {
                 auto item = data[i];
-                auto score = GJUserScore::create();
+                auto score = GJPointercrateScore::create();
                 // demonlist points: score->;
                     
                 score->m_userName = item["username"].asString().unwrapOr("Unknown");
                 score->m_userID = std::stoi(item["playerID"].asString().unwrapOr("0"));
                 score->m_accountID = std::stoi(item["accountID"].asString().unwrapOr("0"));
-
+                score->setPoints(item["demonList"]["points"].asDouble().unwrapOr(0.0));
                 score->m_stars = item["stars"].asInt().unwrapOr(0);
                 score->m_moons = item["moons"].asInt().unwrapOr(0);
                 score->m_diamonds = item["diamonds"].asInt().unwrapOr(0);
-                score->m_demons = item["demonList"]["points"].asDouble().unwrapOr(0.0);
+                score->m_demons = item["demons"].asInt().unwrapOr(0);
                 score->m_creatorPoints = item["cp"].asInt().unwrapOr(0);
                 score->m_secretCoins = item["coins"].asInt().unwrapOr(0);
                 score->m_userCoins = item["userCoins"].asInt().unwrapOr(0);
