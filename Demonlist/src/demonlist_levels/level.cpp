@@ -6,6 +6,7 @@
 #include <matjson.hpp>
 #include <iostream>
 #include <string>
+#include <functional>
 #include <Geode/modify/DemonFilterSelectLayer.hpp>
 #include <Geode/modify/LevelBrowserLayer.hpp>
 #include <Geode/binding/GJSearchObject.hpp>
@@ -19,34 +20,52 @@ using namespace geode::prelude;
 
 static std::unordered_map<std::string, int> s_demonRanks;
 
-class DemonBrowserLayer : public LevelBrowserLayer {
-    private:
-        int m_customPage;
-        TaskHolder<web::WebResponse> m_listener;
-
-    void loadPageByIndex(int page) {
-        std::string pg = std::to_string(page);
-        this->m_listener.spawn(
-             fetchListData(pg),
-             [this](web::WebResponse res) {
+class DemonListAPI {
+    
+    public:
+    static void fetchListObject(int pageIndex, std::function<void(GJSearchObject*)> onComplete) {
+        std::string pg = std::to_string(pageIndex);
+        
+        auto listener = new TaskHolder<web::WebResponse>();
+        
+        listener->spawn(
+            fetchListData(pg),
+            [pageIndex, onComplete, listener](web::WebResponse res) {
                 matjson::Value data = res.json().unwrapOr(matjson::makeObject({}));
-                // take all the ids, join them by id
                 std::string values = "";
+                
                 for (int i = 0; i < data.size(); i++) {
                     auto item = data[i];
                     auto id = item["id"].asString().unwrapOr("0");
-                    s_demonRanks[id] = (this->m_customPage * 10) + 1 + i;
+                    s_demonRanks[id] = (pageIndex * 10) + 1 + i;
                     values = values + id + ",";
                 }
-                if (!values.empty()) {
-                    values.resize(values.size() - 1);
+                
+                if (!values.empty()) values.resize(values.size() - 1);
+                
+                auto obj = GJSearchObject::create(SearchType::Type19, values);
+                
+                if (onComplete) {
+                    onComplete(obj);
                 }
-                GJSearchObject* obj = GJSearchObject::create(SearchType::Type19, values);
-                this->setSearchObject(obj);
-                this->loadPage(obj);
+
+                delete listener;
             }
-         );
+        );
     }
+};
+
+class DemonBrowserLayer : public LevelBrowserLayer {
+    private:
+        int m_customPage;
+
+    void loadPageByIndex(int page) {
+        DemonListAPI::fetchListObject(page, [this](GJSearchObject* obj) {
+            this->setSearchObject(obj);
+            this->loadPage(obj);
+        });
+    }
+
 
     public:
 
@@ -84,28 +103,7 @@ class DemonBrowserLayer : public LevelBrowserLayer {
 
         if (!LevelBrowserLayer::init(placeholder)) return false;
 
-        this->m_listener.spawn(
-            fetchListData("0"),
-            [this](web::WebResponse res) {
-                
-                matjson::Value data = res.json().unwrapOr(matjson::makeObject({}));
-                std::string values = "";
-                for (int i = 0; i < data.size(); i++) {
-                    auto item = data[i];
-                    auto id = item["id"].asString().unwrapOr("0");
-                    s_demonRanks[id] = (this->m_customPage * 10) + 1 + i;
-                    values = values + id + ",";
-                }
-                if (!values.empty()) {
-                    values.resize(values.size() - 1);
-                }
-
-                auto realObject = GJSearchObject::create(SearchType::Type19, values);
-
-                this->setSearchObject(realObject);
-                this->loadPage(realObject);
-            }
-        );
+        this->loadPageByIndex(0);
 
         auto winSize = CCDirector::get()->getWinSize();
 
